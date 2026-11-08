@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Egyenletgyakorló</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper: #f2f6fc; --grid: #cfdcee; --sheet: #fbfdff; --ink: #17264a; --ink-soft: #4d5c80;
+  --pen: #2245c4; --pen-soft: #dfe7fb; --red: #c93434; --red-soft: #fbe4e4;
+  --green: #1c7d54; --green-soft: #ddf3e8; --line: #b9c8df;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-math: "STIX Two Text", "Cambria Math", "Times New Roman", serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1730; --grid: #1c2849; --sheet: #162040; --ink: #e7edfb; --ink-soft: #9aa9ce;
+    --pen: #86a2ff; --pen-soft: #22305e; --red: #ff8a8a; --red-soft: #4a2230;
+    --green: #67d8a5; --green-soft: #17403a; --line: #2d3c68; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; }
+body {
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; margin-bottom: 20px; }
+.brand h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.7rem, 5vw, 2.4rem); line-height: 1.05; margin: 0; letter-spacing: -0.01em; }
+.brand p { margin: 4px 0 0; color: var(--ink-soft); }
+.tally { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { background: var(--sheet); border: 1px solid var(--line); padding: 6px 12px; min-width: 104px; }
+.chip small { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.chip b { font-family: var(--f-mono); font-weight: 500; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+
+.layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.topics { display: grid; gap: 8px; }
+.topic {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center;
+  text-align: left; width: 100%; font: inherit; color: inherit; cursor: pointer;
+  background: var(--sheet); border: 1px solid var(--line); padding: 10px 12px;
+}
+.topic:hover { border-color: var(--pen); }
+.topic:focus-visible, .lv:focus-visible, .btn:focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; }
+.topic[aria-pressed="true"] { border-color: var(--pen); background: var(--pen-soft); box-shadow: 3px 3px 0 var(--pen); }
+.topic .nm { font-weight: 600; }
+.topic .fm { grid-column: 1 / -1; font-family: var(--f-math); font-size: 1.1rem; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topic .fm .frac { line-height: 1.2; font-size: .9em; }
+.topic .sc { font-family: var(--f-mono); font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+@media (max-width: 820px) { .topics { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
+
+.work { display: grid; gap: 16px; min-width: 0; }
+.levels { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.levels > span { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin-right: 4px; }
+.lv { font: inherit; cursor: pointer; background: var(--sheet); color: var(--ink); border: 1px solid var(--line); padding: 5px 14px; }
+.lv[aria-checked="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.sheet { background: var(--sheet); border: 1px solid var(--ink); box-shadow: 5px 5px 0 var(--line); padding: 22px clamp(14px, 4vw, 30px) 20px; min-width: 0; }
+.kind { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 2px; }
+.ask { margin: 0 0 6px; font-weight: 500; }
+.q { font-family: var(--f-math); font-size: clamp(1.3rem, 5.2vw, 2.3rem); line-height: 2; overflow-x: auto; overflow-y: hidden; padding: 4px 0; white-space: nowrap; }
+.q i, .steps i, .rule i, .topic i { font-style: italic; }
+.ansrow { font-family: var(--f-math); font-size: clamp(1.3rem, 5.2vw, 2.1rem); display: flex; align-items: center; gap: .3em; margin-top: 6px; }
+.slot {
+  font-family: var(--f-mono); font-size: .9em; color: var(--pen); text-align: center;
+  width: 5.2em; height: 1.5em; padding: 0 .2em;
+  background: var(--pen-soft); border: 0; border-bottom: 2px solid var(--pen); border-radius: 0;
+}
+.slot:focus { outline: 2px solid var(--pen); outline-offset: 1px; }
+.slot.ok { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+.slot.bad { background: var(--red-soft); border-color: var(--red); color: var(--red); }
+.slot.shown { background: transparent; border-color: var(--ink-soft); color: var(--ink); }
+.frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.5; margin: 0 .12em; }
+.frac > span:first-child { border-bottom: 2px solid currentColor; padding: 0 .25em; }
+.frac > span:last-child { padding: 0 .25em; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.btn { font: inherit; font-weight: 600; cursor: pointer; padding: 9px 18px; border: 1px solid var(--ink); background: var(--sheet); color: var(--ink); }
+.btn.primary { background: var(--pen); border-color: var(--pen); color: var(--paper); }
+.btn:hover { filter: brightness(1.06); }
+.btn[hidden] { display: none; }
+
+.fb { margin-top: 14px; min-height: 1.5em; font-weight: 600; }
+.fb.ok { color: var(--green); }
+.fb.bad { color: var(--red); }
+.fb.info { color: var(--ink-soft); font-weight: 500; }
+.fb .m { font-family: var(--f-math); font-size: 1.1em; color: var(--pen); }
+
+.solution { margin-top: 12px; padding: 10px 14px; background: var(--paper); border: 1px dashed var(--line); }
+.solution h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 500; }
+.scroll { overflow-x: auto; }
+.steps { display: grid; grid-template-columns: max-content max-content; column-gap: 20px; row-gap: 2px; align-items: center; font-family: var(--f-math); font-size: 1.2rem; width: max-content; }
+.steps .eq { white-space: nowrap; }
+.steps .nt { white-space: nowrap; color: var(--pen); }
+.steps .nt.txt { font-family: var(--f-body); font-style: italic; font-size: .8rem; color: var(--ink-soft); }
+.steps .fin { font-weight: 600; }
+.check { margin: 8px 0 0; color: var(--ink-soft); font-size: 14px; }
+.check .m { font-family: var(--f-math); font-size: 1.05rem; color: var(--ink); }
+
+.rule { background: var(--sheet); border: 1px solid var(--line); padding: 14px 18px; min-width: 0; }
+.rule h2 { margin: 0 0 6px; font-family: var(--f-display); font-size: 1.05rem; font-weight: 700; }
+.rule .big { font-family: var(--f-math); font-size: clamp(1.15rem, 4.2vw, 1.6rem); color: var(--pen); overflow-x: auto; white-space: nowrap; line-height: 1.9; }
+.rule p { margin: 6px 0 0; color: var(--ink-soft); max-width: 62ch; }
+.rule.locked .big { filter: blur(6px); user-select: none; }
+
+.foot { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-top: 4px; color: var(--ink-soft); font-size: 13px; }
+.linkbtn { font: inherit; background: none; border: 0; color: var(--ink-soft); text-decoration: underline; cursor: pointer; padding: 4px 0; }
+.linkbtn.warn { color: var(--red); }
+@media (prefers-reduced-motion: no-preference) { .topic, .btn { transition: border-color .12s, box-shadow .12s, filter .12s; } }
+
+/* Beállítások sora */
+.opts { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg > span { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin-right: 4px; }
+.tog { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; font-size: 14px; }
+.tog input { width: 18px; height: 18px; accent-color: var(--pen); }
+.tog[hidden] { display: none; }
+
+/* Lépésenkénti munkalap */
+.rows { display: grid; grid-template-columns: max-content max-content; column-gap: 22px; row-gap: 4px; align-items: center;
+  font-family: var(--f-math); font-size: clamp(1.15rem, 4.4vw, 1.7rem); width: max-content; line-height: 1.9; }
+.rows .eq { white-space: nowrap; padding: 0 .3em; }
+.rows .eq.cur { background: var(--pen-soft); box-shadow: inset 3px 0 0 var(--pen); }
+.rows .eq.auto, .rows .nt.auto { color: var(--ink-soft); }
+.rows .nt { white-space: nowrap; color: var(--pen); font-size: .85em; }
+.rows .nt.txt { font-family: var(--f-body); font-style: italic; font-size: .8rem; color: var(--ink-soft); }
+.rows .nt.pend { color: var(--ink-soft); }
+.rows i, .fb i { font-style: italic; }
+
+.opbox { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); background: var(--paper); display: grid; gap: 10px; }
+.opbox[hidden] { display: none; }
+.opbox label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.inrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.field { font-family: var(--f-mono); font-size: 1.05rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--line);
+  border-bottom: 2px solid var(--pen); padding: 7px 10px; min-width: 0; flex: 1 1 170px; max-width: 360px; border-radius: 0; }
+.field:focus { outline: 2px solid var(--pen); outline-offset: 1px; }
+.field.bad { border-color: var(--red); background: var(--red-soft); }
+.field:disabled { opacity: .55; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px; }
+.key { font-family: var(--f-math); font-size: 1.1rem; min-width: 34px; height: 36px; cursor: pointer; background: var(--sheet); color: var(--ink); border: 1px solid var(--line); }
+.key:hover { border-color: var(--pen); }
+.btn.sm { padding: 6px 12px; font-weight: 500; }
+.tip { font-size: 13px; color: var(--ink-soft); margin: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Egyenletgyakorló</h1>
+      <p>Elsőfokú egyismeretlenes egyenletek megoldása a mérlegelvvel, lépésről lépésre.</p>
+    </div>
+    <div class="tally" aria-label="Összesítés">
+      <div class="chip"><small>Sorozat</small><b id="tStreak">0</b></div>
+      <div class="chip"><small>Hibátlan</small><b id="tTotal">0 / 0</b></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="topics" id="topics" aria-label="Feladattípusok"></nav>
+
+    <section class="work">
+      <div class="opts">
+        <div class="seg" role="radiogroup" aria-label="Nehézség" id="levels"><span>Nehézség</span></div>
+        <div class="seg" role="radiogroup" aria-label="Mód" id="modes"><span>Mód</span></div>
+        <label class="tog" id="typedWrap"><input type="checkbox" id="typed"> Az új alakot én írom be</label>
+      </div>
+
+      <article class="sheet" aria-labelledby="qKind">
+        <p class="kind" id="qKind"></p>
+        <p class="ask" id="qAsk"></p>
+
+        <!-- Csak eredmény mód -->
+        <div id="quick">
+          <div class="q" id="q"></div>
+          <div class="ansrow"><span><i>x</i> =</span>
+            <input class="slot" id="ans" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="x értéke">
+          </div>
+        </div>
+
+        <!-- Lépésenkénti mód -->
+        <div id="step" hidden>
+          <div class="scroll"><div class="rows" id="rows"></div></div>
+
+          <div class="opbox" id="opBox">
+            <label for="op">Melyik műveletet végzed el mindkét oldalon?</label>
+            <div class="inrow">
+              <input class="field" id="op" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="pl. −5, +2x, :3, ·4">
+              <button class="btn primary sm" id="bApply" type="button">Alkalmaz</button>
+            </div>
+            <div class="inrow">
+              <button class="btn sm" id="bExpand" type="button">Zárójelbontás</button>
+              <button class="btn sm" id="bCombine" type="button">Összevonás</button>
+            </div>
+          </div>
+
+          <div class="opbox" id="nfBox" hidden>
+            <label for="nf">Írd fel az egyenlet új alakját</label>
+            <div class="inrow">
+              <input class="field" id="nf" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="pl. 3x = 12">
+              <button class="btn primary sm" id="bNf" type="button">Ellenőrzés</button>
+            </div>
+            <div class="inrow">
+              <button class="btn sm" id="bShowNf" type="button" hidden>Mutasd az új alakot</button>
+              <button class="btn sm" id="bCancelNf" type="button">Másik művelet</button>
+            </div>
+          </div>
+
+          <div class="keys" id="keys" aria-label="Jelek beírása"></div>
+          <p class="tip">Írhatsz így is: <b>-5</b>, <b>*4</b>, <b>/3</b>; a tört alakja <b>(x+3)/4</b>.</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="bCheck" type="button">Ellenőrzés</button>
+          <button class="btn" id="bHint" type="button">Segítség</button>
+          <button class="btn" id="bUndo" type="button" hidden>Visszalépés</button>
+          <button class="btn" id="bReveal" type="button" hidden>Megoldás megmutatása</button>
+          <button class="btn primary" id="bNext" type="button" hidden>Következő feladat</button>
+        </div>
+        <div class="fb" id="fb" role="status" aria-live="polite"></div>
+        <div class="solution" id="sol" hidden>
+          <h3>Levezetés</h3>
+          <div class="scroll"><div class="steps" id="steps"></div></div>
+        </div>
+        <p class="check" id="chk" hidden></p>
+      </article>
+
+      <aside class="rule" id="rule" aria-label="Módszer">
+        <h2 id="ruleTitle"></h2>
+        <div class="big" id="ruleBig"></div>
+        <p id="ruleText"></p>
+      </aside>
+
+      <div class="foot">
+        <span>A haladás ezen az eszközön, a böngészőben marad meg.</span>
+        <button class="linkbtn" id="bReset" type="button">Eredmények törlése</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ===== MOTOR: egyenletábrázolás, átalakítások, feladatgenerátorok. Új típust a TOPICS listába kell felvenni. ===== */
+// ENGINE START
+/* ===== Segédfüggvények ===== */
+const r = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const pick = a => a[r(0, a.length - 1)];
+const rnz = (a, b) => { let v = 0; while (v === 0) v = r(a, b); return v; };
+const sgn = () => Math.random() < 0.5 ? -1 : 1;
+const minus = n => String(n).replace('-', '−');
+const frac = (n, d) => '<span class="frac"><span>' + n + '</span><span>' + d + '</span></span>';
+const X = '<i>x</i>';
+const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; };
+const lcm = (a, b) => Math.abs(a * b) / gcd(a, b);
+
+/* Racionális számok */
+function F(n, d = 1) { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d); return { n: n / g, d: d / g }; }
+const toF = v => typeof v === 'number' ? F(v) : v;
+const fadd = (x, y) => F(x.n * y.d + y.n * x.d, x.d * y.d);
+const fsub = (x, y) => F(x.n * y.d - y.n * x.d, x.d * y.d);
+const fmul = (x, y) => F(x.n * y.n, x.d * y.d);
+const fdiv = (x, y) => F(x.n * y.d, x.d * y.n);
+const fneg = x => F(-x.n, x.d);
+const fabs = x => F(Math.abs(x.n), x.d);
+const feq = (x, y) => x.n === y.n && x.d === y.d;
+const isZ = x => x.n === 0;
+const isOne = x => x.n === 1 && x.d === 1;
+const fhtml = x => x.d === 1 ? minus(x.n) : (x.n < 0 ? '−' : '') + frac(Math.abs(x.n), x.d);
+const ftext = x => x.d === 1 ? minus(x.n) : minus(x.n) + '/' + x.d;
+const fpar = x => x.n < 0 ? '(' + fhtml(x) + ')' : fhtml(x);
+
+/* ===== Egyenletek ábrázolása =====
+   Egy oldal darabok listája:
+   lin: a·x + b               (a, b racionális)
+   grp: m·(a·x + b)           egész m: zárójel, tört m: tört alak  */
+const lin = (a, b, cf) => ({ t: 'lin', a: toF(a), b: toF(b), cf: !!cf });
+const C = b => lin(0, b);
+const grp = (m, a, b) => ({ t: 'grp', m: toF(m), a: toF(a), b: toF(b) });
+const par = (m, a, b) => grp(F(m), a, b);
+const frc = (m, a, b, d) => grp(F(m, d), a, b);
+
+function coefX(a) {
+  const k = fabs(a);
+  return { s: a.n < 0 ? -1 : 1, h: (isOne(k) ? '' : k.d === 1 ? String(k.n) : frac(k.n, k.d)) + X };
+}
+function atomsLin(a, b, cf) {
+  const at = [];
+  if (!isZ(a)) at.push(coefX(a));
+  if (!isZ(b)) at.push({ s: b.n < 0 ? -1 : 1, h: fhtml(fabs(b)) });
+  if (cf) at.reverse();
+  return at;
+}
+function joinAtoms(at) {
+  if (!at.length) return '0';
+  return at.map((x, i) => i === 0 ? (x.s < 0 ? '−' : '') + x.h : (x.s < 0 ? ' − ' : ' + ') + x.h).join('');
+}
+function chunkAtoms(c) {
+  if (c.t === 'lin') return atomsLin(c.a, c.b, c.cf);
+  const inner = joinAtoms(atomsLin(c.a, c.b));
+  const s = c.m.n < 0 ? -1 : 1, k = Math.abs(c.m.n);
+  if (c.m.d === 1) return [{ s, h: (k === 1 ? '' : k) + '(' + inner + ')' }];
+  return [{ s, h: (k === 1 ? '' : k + '·') + frac(inner, c.m.d) }];
+}
+const renderSide = s => joinAtoms(s.flatMap(chunkAtoms));
+const renderEq = E => renderSide(E.L) + ' = ' + renderSide(E.R);
+
+function chunkLin(c) {
+  if (c.t === 'lin') return [c.a, c.b];
+  return [fmul(c.m, c.a), fmul(c.m, c.b)];
+}
+const sideLin = s => s.reduce(([A, B], c) => { const [a, b] = chunkLin(c); return [fadd(A, a), fadd(B, b)]; }, [F(0), F(0)]);
+function solve(E) {
+  const [A1, B1] = sideLin(E.L), [A2, B2] = sideLin(E.R);
+  const A = fsub(A1, A2);
+  return isZ(A) ? null : fdiv(fsub(B2, B1), A);
+}
+const evalSide = (s, x) => { const [A, B] = sideLin(s); return fadd(fmul(A, x), B); };
+
+/* ===== Átalakítások (mérlegelv) ===== */
+function normChunk(c) {
+  if (c.t === 'grp') {
+    if (isOne(c.m)) return lin(c.a, c.b);
+    if (c.m.d === 1 && isZ(c.b)) return lin(fmul(c.m, c.a), 0);
+  }
+  return c;
+}
+const overlap = (p, q) => (!isZ(p.a) && !isZ(q.a)) || (!isZ(p.b) && !isZ(q.b));
+function normSide(s) {
+  const out = [];
+  for (let c of s) {
+    c = normChunk(c);
+    if (c.t === 'lin' && isZ(c.a) && isZ(c.b)) continue;
+    const last = out[out.length - 1];
+    if (c.t === 'lin' && last && last.t === 'lin' && !overlap(last, c)) {
+      const cf = isZ(last.a) ? true : (isZ(last.b) ? false : last.cf);
+      out[out.length - 1] = lin(fadd(last.a, c.a), fadd(last.b, c.b), cf);
+    } else out.push(c);
+  }
+  return out.length ? out : [lin(0, 0)];
+}
+const norm = E => ({ L: normSide(E.L), R: normSide(E.R) });
+
+function mulSide(s, k) {
+  return s.map(c => c.t === 'lin' ? lin(fmul(c.a, k), fmul(c.b, k), c.cf) : grp(fmul(c.m, k), c.a, c.b));
+}
+function addSide(s, a, b) {
+  const out = s.slice();
+  let idx = -1;
+  for (let i = out.length - 1; i >= 0; i--) if (out[i].t === 'lin') { idx = i; break; }
+  if (idx >= 0) { const c = out[idx]; out[idx] = lin(fadd(c.a, a), fadd(c.b, b), c.cf); }
+  else out.push(lin(a, b));
+  return out;
+}
+function combineSide(s) {
+  const lins = s.filter(c => c.t === 'lin');
+  if (lins.length < 2) return s;
+  const [A, B] = sideLin(lins);
+  const out = []; let placed = false;
+  for (const c of s) {
+    if (c.t !== 'lin') out.push(c);
+    else if (!placed) { out.push(lin(A, B)); placed = true; }
+  }
+  return out;
+}
+const hasGrp = E => [...E.L, ...E.R].some(c => c.t === 'grp');
+const canCombine = E => [E.L, E.R].some(s => s.filter(c => c.t === 'lin').length > 1);
+
+/* op: {k:'add', a, b} | {k:'mul', v} | {k:'div', v} | {k:'expand'} | {k:'combine'} */
+function applyOp(E, op) {
+  if (op.k === 'add') {
+    if (isZ(op.a) && isZ(op.b)) return { err: 'A 0 hozzáadása nem változtat az egyenleten.' };
+    return { E: norm({ L: addSide(E.L, op.a, op.b), R: addSide(E.R, op.a, op.b) }) };
+  }
+  if (op.k === 'mul' || op.k === 'div') {
+    if (isZ(op.v)) return { err: op.k === 'mul' ? 'Nullával szorozni nem szabad: elveszne az egyenlet.' : 'Nullával nem lehet osztani.' };
+    if (isOne(op.v)) return { err: 'Az 1-gyel ' + (op.k === 'mul' ? 'szorzás' : 'osztás') + ' nem változtat az egyenleten.' };
+    const k = op.k === 'mul' ? op.v : fdiv(F(1), op.v);
+    return { E: norm({ L: mulSide(E.L, k), R: mulSide(E.R, k) }) };
+  }
+  if (op.k === 'expand') {
+    if (!hasGrp(E)) return { err: 'Nincs felbontható zárójel vagy tört.' };
+    const ex = c => c.t === 'grp' ? lin(fmul(c.m, c.a), fmul(c.m, c.b)) : c;
+    return { E: norm({ L: E.L.map(ex), R: E.R.map(ex) }) };
+  }
+  if (op.k === 'combine') {
+    if (!canCombine(E)) return { err: hasGrp(E) ? 'Előbb bontsd fel a zárójelet: zárójeles taggal nem lehet összevonni.' : 'Nincs összevonható tag: egy oldalon nincs két egynemű tag.' };
+    return { E: norm({ L: combineSide(E.L), R: combineSide(E.R) }) };
+  }
+  return { err: 'Ismeretlen művelet.' };
+}
+function opNote(op) {
+  if (op.k === 'expand') return { h: 'zárójelbontás', txt: true };
+  if (op.k === 'combine') return { h: 'összevonás', txt: true };
+  if (op.k === 'add') return { h: '| ' + atomsLin(op.a, op.b).map(a => (a.s < 0 ? '− ' : '+ ') + a.h).join(' ') };
+  return { h: '| ' + (op.k === 'mul' ? '· ' : ': ') + fpar(op.v) };
+}
+
+/* Kész-e: x = c vagy c = x */
+function doneValue(E) {
+  if (E.L.length !== 1 || E.R.length !== 1) return null;
+  const l = E.L[0], q = E.R[0];
+  if (l.t !== 'lin' || q.t !== 'lin') return null;
+  if (isOne(l.a) && isZ(l.b) && isZ(q.a)) return q.b;
+  if (isOne(q.a) && isZ(q.b) && isZ(l.a)) return l.b;
+  return null;
+}
+
+/* A javasolt következő lépés */
+function nextOp(E) {
+  if (doneValue(E)) return null;
+  const all = [...E.L, ...E.R];
+  let D = 1;
+  all.forEach(c => { (c.t === 'lin' ? [c.a, c.b] : [c.m, c.a, c.b]).forEach(f => { D = lcm(D, f.d); }); });
+  if (D > 1) return { k: 'mul', v: F(D) };
+  if (hasGrp(E)) return { k: 'expand' };
+  if (canCombine(E)) return { k: 'combine' };
+  const [a, b] = sideLin(E.L), [c, d] = sideLin(E.R);
+  if (!isZ(c) && !isZ(a)) return { k: 'add', a: fneg(c), b: F(0) };
+  if (isZ(a)) {
+    if (!isZ(d)) return { k: 'add', a: F(0), b: fneg(d) };
+    return { k: 'div', v: c };
+  }
+  if (!isZ(b)) return { k: 'add', a: F(0), b: fneg(b) };
+  return { k: 'div', v: a };
+}
+function derive(E) {
+  const rows = [{ eq: renderEq(E), note: '', txt: false }];
+  let cur = E, guard = 0, op;
+  while ((op = nextOp(cur)) && guard++ < 25) {
+    const n = opNote(op);
+    rows[rows.length - 1].note = n.h; rows[rows.length - 1].txt = !!n.txt;
+    cur = applyOp(cur, op).E;
+    rows.push({ eq: renderEq(cur), note: '', txt: false });
+  }
+  return rows;
+}
+
+/* ===== Beírt kifejezések értelmezése ===== */
+function tokenize(s) {
+  s = s.replace(/[−–—]/g, '-').replace(/[·×•*]/g, '*').replace(/[:÷]/g, '/').replace(/X/g, 'x');
+  const t = []; let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    const m = s.slice(i).match(/^\d+(?:[.,]\d+)?/);
+    if (m) {
+      const [ip, dp = ''] = m[0].replace(',', '.').split('.');
+      t.push({ k: 'n', v: F(parseInt(ip + dp, 10), 10 ** dp.length) }); i += m[0].length; continue;
+    }
+    if ('x+-*/()='.includes(ch)) { t.push({ k: ch }); i++; continue; }
+    throw new Error('Ismeretlen jel: „' + ch + '”');
+  }
+  return t;
+}
+function parseLinear(tokens) {
+  let p = 0;
+  const peek = () => tokens[p] && tokens[p].k;
+  const lmul = (u, v) => {
+    if (!isZ(u.a) && !isZ(v.a)) throw new Error('x·x már nem elsőfokú.');
+    return { a: fadd(fmul(u.a, v.b), fmul(v.a, u.b)), b: fmul(u.b, v.b) };
+  };
+  const ldiv = (u, v) => {
+    if (!isZ(v.a)) throw new Error('x-szel nem osztunk.');
+    if (isZ(v.b)) throw new Error('Nullával nem lehet osztani.');
+    return { a: fdiv(u.a, v.b), b: fdiv(u.b, v.b) };
+  };
+  function sum() {
+    let v = term();
+    while (peek() === '+' || peek() === '-') {
+      const o = tokens[p++].k, w = term();
+      v = { a: o === '+' ? fadd(v.a, w.a) : fsub(v.a, w.a), b: o === '+' ? fadd(v.b, w.b) : fsub(v.b, w.b) };
+    }
+    return v;
+  }
+  function term() {
+    let v = unary();
+    for (;;) {
+      const k = peek();
+      if (k === '*') { p++; v = lmul(v, unary()); }
+      else if (k === '/') { p++; v = ldiv(v, unary()); }
+      else if (k === 'n' || k === 'x' || k === '(') v = lmul(v, unary());
+      else return v;
+    }
+  }
+  function unary() {
+    if (peek() === '-') { p++; const v = unary(); return { a: fneg(v.a), b: fneg(v.b) }; }
+    if (peek() === '+') { p++; return unary(); }
+    return primary();
+  }
+  function primary() {
+    const t = tokens[p++];
+    if (!t) throw new Error('Hiányos kifejezés.');
+    if (t.k === 'n') return { a: F(0), b: t.v };
+    if (t.k === 'x') return { a: F(1), b: F(0) };
+    if (t.k === '(') { const v = sum(); if (peek() !== ')') throw new Error('Hiányzik egy záró zárójel.'); p++; return v; }
+    throw new Error('Hiányos vagy hibás kifejezés.');
+  }
+  const v = sum();
+  if (p < tokens.length) throw new Error(tokens[p].k === ')' ? 'Eggyel több a záró zárójel.' : 'Hibás kifejezés.');
+  return v;
+}
+function parseEquation(s) {
+  const t = tokenize(s);
+  const i = t.findIndex(x => x.k === '=');
+  if (i < 0 || t.slice(i + 1).some(x => x.k === '=')) throw new Error('Pontosan egy egyenlőségjel kell.');
+  if (i === 0 || i === t.length - 1) throw new Error('Az egyenlőségjel mindkét oldalán kell valami.');
+  return { L: parseLinear(t.slice(0, i)), R: parseLinear(t.slice(i + 1)) };
+}
+function parseOp(s) {
+  let str = s.trim().replace(/[−–—]/g, '-').replace(/[×•*]/g, '·').replace(/÷/g, ':');
+  if (!str) throw new Error('Írd be a műveletet.');
+  const c = str[0];
+  if (c === '+' || c === '-') {
+    const v = parseLinear(tokenize(str));
+    return { k: 'add', a: v.a, b: v.b };
+  }
+  if (c === '·' || c === ':' || c === '/') {
+    const v = parseLinear(tokenize(str.slice(1)));
+    if (!isZ(v.a)) throw new Error(c === '·' ? 'Ismeretlennel nem szorzunk, csak számmal.' : 'Ismeretlennel nem osztunk, csak számmal.');
+    return { k: c === '·' ? 'mul' : 'div', v: v.b };
+  }
+  throw new Error('Kezdd műveleti jellel: + , − , · vagy : (például −5 vagy :3).');
+}
+
+/* ===== Feladatgenerátorok ===== */
+const NZ = (lo, hi) => sgn() * r(lo, hi);
+function rejection(build, L) {
+  for (let i = 0; i < 600; i++) {
+    const E = build();
+    const x = solve(E);
+    if (!x) continue;
+    if (L < 3 && (x.d !== 1 || Math.abs(x.n) > 20)) continue;
+    if (L === 3 && (x.d > 12 || Math.abs(x.n / x.d) > 30)) continue;
+    return E;
+  }
+  return { L: [lin(2, 3)], R: [C(11)] };
+}
+
+function genOne(L) {
+  const f = r(1, 4);
+  if (L === 1) {
+    const x = r(1, 12);
+    if (f === 1) { const b = r(1, 12); return { L: [lin(1, b)], R: [C(x + b)] }; }
+    if (f === 2) { const b = r(1, x); return { L: [lin(1, -b)], R: [C(x - b)] }; }
+    if (f === 3) { const a = r(2, 9); return { L: [lin(a, 0)], R: [C(a * x)] }; }
+    const d = r(2, 6), q = r(1, 9); return { L: [frc(1, 1, 0, d)], R: [C(q)] };
+  }
+  if (L === 2) {
+    const x = rnz(-12, 12);
+    if (f === 1) { const b = rnz(-15, 15); return { L: [lin(1, b, Math.random() < 0.4)], R: [C(x + b)] }; }
+    if (f === 2) { const b = rnz(-15, 15); return { L: [lin(-1, b, true)], R: [C(b - x)] }; }
+    if (f === 3) { const a = pick([-9, -8, -7, -6, -5, -4, -3, -2, -1, 2, 3, 4, 5, 6, 7, 8, 9]); return { L: [lin(a, 0)], R: [C(a * x)] }; }
+    const d = r(2, 8), q = rnz(-9, 9); return { L: [frc(1, 1, 0, d)], R: [C(q)] };
+  }
+  if (f <= 2) return rejection(() => { const a = NZ(2, 12), c = rnz(-40, 40); return (c % a === 0) ? { L: [lin(1, 1)], R: [lin(1, 1)] } : { L: [lin(a, 0)], R: [C(c)] }; }, 3);
+  if (f === 3) return rejection(() => { const a = r(2, 6), d = r(2, 7); return gcd(a, d) > 1 ? { L: [lin(1, 0)], R: [lin(1, 0)] } : { L: [frc(sgn(), a, 0, d)], R: [C(rnz(-12, 12))] }; }, 3);
+  const b = NZ(15, 60), x = rnz(-40, 40); return { L: [lin(1, b)], R: [C(x + b)] };
+}
+
+function genTwo(L) {
+  if (L === 1) {
+    const x = r(1, 10), a = r(2, 6);
+    if (Math.random() < 0.5) { const b = r(1, 15); return { L: [lin(a, b)], R: [C(a * x + b)] }; }
+    const b = r(1, a * x); return { L: [lin(a, -b)], R: [C(a * x - b)] };
+  }
+  if (L === 2) {
+    const x = r(-10, 10), a = NZ(2, 9), b = rnz(-20, 20);
+    return { L: [lin(a, b, Math.random() < 0.4)], R: [C(a * x + b)] };
+  }
+  return rejection(() => ({ L: [lin(NZ(2, 12), rnz(-40, 40), Math.random() < 0.3)], R: [C(rnz(-40, 40))] }), 3);
+}
+
+function genBoth(L) {
+  if (L === 1) {
+    const x = r(1, 10), c = r(1, 5), a = c + r(1, 4), b = r(0, 12);
+    return { L: [lin(a, b)], R: [lin(c, (a - c) * x + b)] };
+  }
+  if (L === 2) {
+    const x = r(-10, 10); let a, c;
+    do { a = rnz(-9, 9); c = rnz(-9, 9); } while (a === c);
+    const b = rnz(-20, 20);
+    return { L: [lin(a, b)], R: [lin(c, (a - c) * x + b, Math.random() < 0.4)] };
+  }
+  return rejection(() => {
+    const Ls = [lin(rnz(-12, 12), rnz(-30, 30))];
+    const Rs = [lin(rnz(-12, 12), rnz(-30, 30), Math.random() < 0.3)];
+    if (Math.random() < 0.5) Ls.push(lin(rnz(-9, 9), 0));
+    if (Math.random() < 0.4) Rs.push(C(rnz(-20, 20)));
+    return { L: Ls, R: Rs };
+  }, 3);
+}
+
+function genPar(L) {
+  if (L === 1) {
+    const m = r(2, 6), x = r(1, 9);
+    if (Math.random() < 0.5) { const b = r(1, 8); return { L: [par(m, 1, b)], R: [C(m * (x + b))] }; }
+    const b = r(1, x); return { L: [par(m, 1, -b)], R: [C(m * (x - b))] };
+  }
+  if (L === 2) {
+    const x = r(-8, 8), m = NZ(2, 6), b = rnz(-8, 8);
+    if (Math.random() < 0.5) {
+      let n; do { n = rnz(-6, 6); } while (n === m);
+      return { L: [par(m, 1, b)], R: [lin(n, m * (x + b) - n * x)] };
+    }
+    const k = rnz(-15, 15);
+    return { L: [par(m, 1, b), C(k)], R: [C(m * (x + b) + k)] };
+  }
+  return rejection(() => {
+    const Ls = [par(NZ(2, 7), pick([1, 1, 2, 3]), rnz(-9, 9))];
+    if (Math.random() < 0.6) Ls.push(par(NZ(1, 5), 1, rnz(-9, 9)));
+    const Rs = Math.random() < 0.5 ? [par(NZ(2, 6), 1, rnz(-9, 9))] : [lin(rnz(-8, 8), rnz(-30, 30))];
+    return { L: Ls, R: Rs };
+  }, 3);
+}
+
+function genFrac(L) {
+  if (L === 1) {
+    if (Math.random() < 0.5) { const d = r(2, 6), q = r(1, 8), b = r(1, 10); return { L: [frc(1, 1, 0, d), C(b)], R: [C(q + b)] }; }
+    const d = r(2, 5), c = r(1, 8), b = r(1, d * c - 1); return { L: [frc(1, 1, b, d)], R: [C(c)] };
+  }
+  if (L === 2) {
+    const v = r(1, 3);
+    if (v === 1) { const a = NZ(1, 5), d = r(2, 7), x = r(-8, 8), c = rnz(-9, 9); return { L: [frc(1, a, d * c - a * x, d)], R: [C(c)] }; }
+    if (v === 2) {
+      const d1 = pick([2, 3, 4, 5, 6]); let d2; do { d2 = pick([2, 3, 4, 5, 6]); } while (d2 === d1);
+      const M = lcm(d1, d2), x = M * rnz(-3, 3);
+      return { L: [frc(1, 1, 0, d1), frc(sgn(), 1, 0, d2)], R: [C(0)] , _x: x, _fix: [d1, d2] };
+    }
+    const d = r(2, 7), q = rnz(-8, 8), b = rnz(-12, 12); return { L: [frc(1, 1, 0, d), C(-Math.abs(b))], R: [C(q - Math.abs(b))] };
+  }
+  return rejection(() => {
+    const d1 = r(2, 6), d2 = r(2, 6);
+    const v = r(1, 3);
+    if (v === 1) return { L: [frc(1, 1, rnz(-9, 9), d1)], R: [frc(1, 1, rnz(-9, 9), d2)] };
+    if (v === 2) return { L: [frc(1, NZ(1, 4), rnz(-9, 9), d1), frc(-1, NZ(1, 3), rnz(-9, 9), d2)], R: [C(rnz(-6, 6))] };
+    return { L: [frc(1, 1, 0, d1), frc(-1, 1, rnz(-9, 9), d2)], R: [C(rnz(-6, 6))] };
+  }, 3);
+}
+/* Az x/d1 ± x/d2 = c változat jobb oldalát utólag számoljuk ki */
+function fixup(E) {
+  if (E._fix) {
+    const v = evalSide(E.L, F(E._x));
+    E.R = [C(v.n)];
+    delete E._fix; delete E._x;
+  }
+  return E;
+}
+
+const TOPICS = [
+  { id: 'one', name: 'Egylépéses', kind: 'Egylépéses egyenlet', ex: X + ' + 5 = 12',
+    formula: X + ' + <i>a</i> = <i>b</i> &nbsp;| − <i>a</i> &nbsp;⟹&nbsp; ' + X + ' = <i>b</i> − <i>a</i>',
+    text: 'Mérlegelv: az egyenlet mindkét oldalán ugyanazt a műveletet végezzük. Az x mellől a fordított művelettel tüntetjük el a számot (összeadás ↔ kivonás, szorzás ↔ osztás).', gen: genOne },
+  { id: 'two', name: 'Kétlépéses', kind: 'Kétlépéses egyenlet', ex: '3' + X + ' − 4 = 11',
+    formula: '<i>a</i>' + X + ' + <i>b</i> = <i>c</i> &nbsp;| − <i>b</i> &nbsp;⟹&nbsp; <i>a</i>' + X + ' = <i>c</i> − <i>b</i> &nbsp;| : <i>a</i>',
+    text: 'Először a számot visszük át a másik oldalra (kivonással vagy hozzáadással), utána osztunk az x együtthatójával.', gen: genTwo },
+  { id: 'both', name: 'x mindkét oldalon', kind: 'Ismeretlen mindkét oldalon', ex: '5' + X + ' + 2 = 2' + X + ' + 11',
+    formula: '<i>a</i>' + X + ' + <i>b</i> = <i>c</i>' + X + ' + <i>d</i> &nbsp;| − <i>c</i>' + X,
+    text: 'Gyűjtsük az x-es tagokat az egyik oldalra, a számokat a másikra. Vonjunk össze, végül osszunk az x együtthatójával.', gen: genBoth },
+  { id: 'par', name: 'Zárójeles', kind: 'Zárójeles egyenlet', ex: '3(' + X + ' − 2) = 12',
+    formula: '<i>k</i>(' + X + ' + <i>b</i>) = <i>k</i>' + X + ' + <i>kb</i>',
+    text: 'Bontsuk fel a zárójeleket: a szorzóval a zárójel minden tagját megszorozzuk. Negatív szorzónál minden előjel megfordul! Utána vonjunk össze, és oldjuk meg.', gen: genPar },
+  { id: 'frac', name: 'Törtes', kind: 'Törtes egyenlet', ex: frac(X, 4) + ' + 1 = 3',
+    formula: frac(X, '<i>a</i>') + ' + <i>b</i> = <i>c</i> &nbsp;| · <i>a</i> &nbsp;⟹&nbsp; ' + X + ' + <i>ab</i> = <i>ac</i>',
+    text: 'Szorozzuk meg mindkét oldal minden tagját a nevezők legkisebb közös többszörösével. Így eltűnnek a törtek; a számlálót érdemes zárójelbe tenni.', gen: L => fixup(genFrac(L)) },
+  { id: 'mixed', name: 'Vegyes', kind: 'Vegyes feladat', ex: 'mind az öt típus',
+    formula: 'zárójelbontás → összevonás → rendezés → osztás',
+    text: 'Előbb döntsd el, milyen típusú az egyenlet, és mi legyen az első lépés.', gen: null }
+];
+const LEVELS = [{ id: 1, name: 'Könnyű' }, { id: 2, name: 'Közepes' }, { id: 3, name: 'Nehéz' }];
+
+function makeQuestion(topicId, level, prevKey) {
+  const t = TOPICS.find(x => x.id === topicId);
+  let q, guard = 0;
+  do {
+    const src = t.gen ? t : pick(TOPICS.filter(x => x.gen));
+    const E = src.gen(level);
+    const x = solve(E);
+    if (!x) { guard++; continue; }
+    q = { E, x, topic: src.id, key: renderEq(E), rows: derive(E) };
+    guard++;
+  } while ((!q || q.key === prevKey) && guard < 30);
+  return q;
+}
+
+// ENGINE END
+
+/* ===== Felület ===== */
+const KEY = 'egyenletgyakorlo.v1';
+const $ = id => document.getElementById(id);
+const MODES = [{ id: 'step', name: 'Lépésenként' }, { id: 'quick', name: 'Csak eredmény' }];
+let state = { topic: 'one', level: 1, mode: 'step', typed: false, streak: 0, stats: {} };
+let cur = null, prevKey = '', finished = false, hintShown = false;
+let attempts = 0;                                   // csak eredmény mód
+let st = null;                                      // lépésenkénti mód állapota
+let lastInput = null;
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (s && typeof s === 'object') {
+      state.topic = TOPICS.some(t => t.id === s.topic) ? s.topic : 'one';
+      state.level = [1, 2, 3].includes(s.level) ? s.level : 1;
+      state.mode = s.mode === 'quick' ? 'quick' : 'step';
+      state.typed = !!s.typed;
+      state.streak = Number.isFinite(s.streak) ? s.streak : 0;
+      state.stats = s.stats && typeof s.stats === 'object' ? s.stats : {};
+    }
+  } catch (e) { /* nincs mentett adat */ }
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* nem baj */ } }
+const stat = id => state.stats[id] || { ok: 0, done: 0 };
+
+function renderTopics() {
+  $('topics').innerHTML = TOPICS.map(t => {
+    const s = stat(t.id);
+    return '<button type="button" class="topic" data-id="' + t.id + '" aria-pressed="' + (t.id === state.topic) + '">' +
+      '<span class="nm">' + t.name + '</span><span class="sc">' + s.ok + ' / ' + s.done + '</span>' +
+      '<span class="fm">' + t.ex + '</span></button>';
+  }).join('');
+}
+function renderSeg(boxId, items, curId) {
+  const box = $(boxId);
+  box.querySelectorAll('.lv').forEach(n => n.remove());
+  items.forEach(l => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'lv'; b.dataset.id = l.id; b.textContent = l.name;
+    b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(l.id === curId));
+    box.appendChild(b);
+  });
+}
+function renderOpts() {
+  renderSeg('levels', LEVELS, state.level);
+  renderSeg('modes', MODES, state.mode);
+  $('typed').checked = state.typed;
+  $('typedWrap').hidden = state.mode !== 'step';
+}
+function renderTally() {
+  let ok = 0, done = 0;
+  Object.values(state.stats).forEach(s => { ok += s.ok; done += s.done; });
+  $('tStreak').textContent = state.streak;
+  $('tTotal').textContent = ok + ' / ' + done;
+}
+function renderRule() {
+  const t = TOPICS.find(x => x.id === cur.topic);
+  const locked = state.topic === 'mixed' && !hintShown && !finished;
+  $('rule').classList.toggle('locked', locked);
+  $('ruleTitle').textContent = locked ? 'Melyik módszer kell ide?' : t.kind;
+  $('ruleBig').innerHTML = t.formula;
+  $('ruleText').textContent = locked ? 'Gondold végig, aztán kérj segítséget, ha elakadsz.' : t.text;
+}
+function setFb(cls, msg, html) {
+  $('fb').className = 'fb ' + cls;
+  if (html) $('fb').innerHTML = msg; else $('fb').textContent = msg;
+}
+function checkLine() {
+  const l = evalSide(cur.E.L, cur.x), rr = evalSide(cur.E.R, cur.x);
+  $('chk').innerHTML = 'Ellenőrzés: <span class="m">' + X + ' = ' + fhtml(cur.x) + '</span> behelyettesítésével a bal oldal <span class="m">' +
+    fhtml(l) + '</span>, a jobb oldal <span class="m">' + fhtml(rr) + '</span>' + (feq(l, rr) ? ' ✓' : '');
+  $('chk').hidden = false;
+}
+function record(credit) {
+  finished = true;
+  const id = state.topic, s = stat(id);
+  state.stats[id] = { ok: s.ok + (credit ? 1 : 0), done: s.done + 1 };
+  state.streak = credit ? state.streak + 1 : 0;
+  save(); renderTopics(); renderTally(); renderRule();
+}
+
+/* ---------- Új feladat ---------- */
+function newQuestion() {
+  cur = makeQuestion(state.topic, state.level, prevKey);
+  prevKey = cur.key;
+  finished = false; hintShown = false; attempts = 0;
+  const t = TOPICS.find(x => x.id === cur.topic);
+  $('qKind').textContent = state.topic === 'mixed' ? 'Vegyes feladat' : t.kind;
+  const step = state.mode === 'step';
+  $('quick').hidden = step; $('step').hidden = !step;
+  $('bCheck').hidden = step; $('bUndo').hidden = true;
+  $('bHint').hidden = false; $('bReveal').hidden = true; $('bNext').hidden = true;
+  $('sol').hidden = true; $('chk').hidden = true;
+  setFb('', '');
+  renderRule();
+  if (step) startStep(); else startQuick();
+}
+
+/* ---------- Csak eredmény mód ---------- */
+function startQuick() {
+  $('qAsk').textContent = state.level === 3
+    ? 'Oldd meg az egyenletet. Az eredmény tört is lehet, például −7/3.'
+    : 'Oldd meg az egyenletet, és írd be x értékét.';
+  $('q').innerHTML = cur.key;
+  const a = $('ans'); a.value = ''; a.className = 'slot'; a.readOnly = false;
+  a.focus({ preventScroll: true });
+}
+function parseAns(s) {
+  s = String(s).trim().replace(/^x\s*=\s*/i, '').replace(/[−–—]/g, '-').replace(/\s+/g, '').replace(',', '.');
+  let m = s.match(/^(-?\d+)\/(-?\d+)$/);
+  if (m) { const d = parseInt(m[2], 10); return d === 0 ? null : F(parseInt(m[1], 10), d); }
+  m = s.match(/^(-?)(\d+)(?:\.(\d+))?$/);
+  if (m) { const dec = m[3] || ''; return F(parseInt(m[2] + dec, 10) * (m[1] ? -1 : 1), 10 ** dec.length); }
+  return null;
+}
+function finishQuick(credit) {
+  record(credit);
+  $('bCheck').hidden = true; $('bHint').hidden = true; $('bReveal').hidden = true; $('bNext').hidden = false;
+  $('steps').innerHTML = cur.rows.map((row, i) =>
+    '<div class="eq' + (i === cur.rows.length - 1 ? ' fin' : '') + '">' + row.eq + '</div>' +
+    '<div class="nt' + (row.txt ? ' txt' : '') + '">' + row.note + '</div>').join('');
+  $('sol').hidden = false;
+  checkLine();
+  $('bNext').focus({ preventScroll: true });
+}
+function checkQuick() {
+  if (finished) return;
+  const a = $('ans');
+  if (a.value.trim() === '') { setFb('info', 'Írd be x értékét.'); return; }
+  const v = parseAns(a.value);
+  if (!v) { setFb('info', 'Számot írj be, például 5, −3, 2,5 vagy 7/3.'); return; }
+  attempts++;
+  if (feq(v, cur.x)) {
+    a.classList.remove('bad'); a.classList.add('ok'); a.readOnly = true;
+    setFb('ok', attempts === 1 ? 'Helyes, elsőre!' : 'Helyes.');
+    finishQuick(attempts === 1);
+    return;
+  }
+  a.classList.add('bad');
+  hintShown = true; renderRule();
+  const close = cur.x.d !== 1 && Math.abs(v.n / v.d - cur.x.n / cur.x.d) < 0.05;
+  setFb('bad', close
+    ? 'Majdnem! A pontos értéket add meg törtként, például p/q alakban.'
+    : 'Ez még nem jó. Helyettesítsd vissza a válaszod az egyenletbe, vagy nézd meg a módszert lent.');
+  if (attempts >= 2) $('bReveal').hidden = false;
+  a.focus(); a.select();
+}
+
+/* ---------- Lépésenkénti mód ---------- */
+function startStep() {
+  $('qAsk').textContent = state.typed
+    ? 'Add meg, milyen műveletet végzel mindkét oldalon, aztán írd fel az egyenlet új alakját. Addig folytasd, amíg x = … alakot nem kapsz.'
+    : 'Add meg, milyen műveletet végzel mindkét oldalon; a program felírja az új alakot. Addig folytasd, amíg x = … alakot nem kapsz.';
+  st = { E: cur.E, rows: [{ eq: cur.key, note: '', txt: false }], hist: [], errors: 0, pending: null, nfTries: 0, revealed: false };
+  $('op').value = ''; $('nf').value = '';
+  showOpBox();
+  renderRows();
+  $('op').focus({ preventScroll: true });
+}
+function renderRows() {
+  const n = st.rows.length;
+  $('rows').innerHTML = st.rows.map((row, i) => {
+    const c = (row.auto ? ' auto' : '') + (i === n - 1 && !finished ? ' cur' : '');
+    return '<div class="eq' + c + '">' + row.eq + '</div>' +
+      '<div class="nt' + (row.txt ? ' txt' : '') + (row.pend ? ' pend' : '') + (row.auto ? ' auto' : '') + '">' + row.note + '</div>';
+  }).join('');
+  $('bUndo').hidden = finished || st.hist.length === 0;
+}
+function showOpBox() {
+  $('opBox').hidden = false; $('nfBox').hidden = true;
+  $('op').disabled = false;
+  lastInput = $('op');
+}
+function setLastNote(op, pend) {
+  const n = opNote(op), last = st.rows[st.rows.length - 1];
+  last.note = n.h; last.txt = !!n.txt; last.pend = !!pend;
+}
+function userOp(op) {
+  if (finished || st.pending) return;
+  const res = applyOp(st.E, op);
+  if (res.err) { setFb('info', res.err); return; }
+  $('op').classList.remove('bad');
+  if (state.typed) {
+    st.pending = { op, E: res.E }; st.nfTries = 0;
+    setLastNote(op, true); renderRows();
+    $('opBox').hidden = true; $('nfBox').hidden = false; $('bShowNf').hidden = true;
+    $('nf').value = ''; $('nf').classList.remove('bad');
+    lastInput = $('nf'); $('nf').focus({ preventScroll: true });
+    setFb('info', 'Most írd fel, mi lesz az egyenletből a(z) ' + opNote(op).h.replace('| ', '') + ' után.', false);
+  } else {
+    commit(op, res.E);
+  }
+}
+function commit(op, E2) {
+  st.hist.push({ E: st.E, len: st.rows.length });
+  setLastNote(op, false);
+  st.E = E2;
+  st.rows.push({ eq: renderEq(E2), note: '', txt: false });
+  st.pending = null;
+  $('op').value = '';
+  showOpBox();
+  const v = doneValue(E2);
+  if (v) { finishStep(); return; }
+  renderRows();
+  setFb('', '');
+  $('op').focus({ preventScroll: true });
+}
+function applyTyped() {
+  const s = $('op').value;
+  try { userOp(parseOp(s)); }
+  catch (e) { setFb('info', e.message); $('op').classList.add('bad'); $('op').focus(); }
+}
+function checkNf() {
+  if (!st.pending) return;
+  let p;
+  try { p = parseEquation($('nf').value); }
+  catch (e) { setFb('info', e.message); return; }
+  const [A1, B1] = sideLin(st.pending.E.L), [A2, B2] = sideLin(st.pending.E.R);
+  const okSides = feq(p.L.a, A1) && feq(p.L.b, B1) && feq(p.R.a, A2) && feq(p.R.b, B2);
+  const stillPar = st.pending.op.k === 'expand' && /\(/.test($('nf').value);
+  if (okSides && !stillPar) {
+    let E2 = st.pending.E;
+    // ha a diák már zárójel nélkül írta fel, mi is bontsuk fel
+    if (!/[(]/.test($('nf').value) && [...E2.L, ...E2.R].some(c => c.t === 'grp' && c.m.d === 1)) {
+      E2 = applyOp(E2, { k: 'expand' }).E;
+    }
+    commit(st.pending.op, E2);
+    if (!finished) setFb('ok', 'Jó, ez az új alak.');
+    return;
+  }
+  st.errors++; st.nfTries++;
+  $('nf').classList.add('bad');
+  hintShown = true; renderRule();
+  setFb('bad', okSides && stillPar
+    ? 'A zárójelbontás után ne maradjon zárójel.'
+    : 'Ez nem egyezik. Az egyenlet mindkét oldalán, minden tagra végezd el a műveletet, és figyelj az előjelekre.');
+  if (st.nfTries >= 2) $('bShowNf').hidden = false;
+  if (st.errors >= 2) $('bReveal').hidden = false;
+  $('nf').focus(); $('nf').select();
+}
+function cancelNf() {
+  if (!st.pending) return;
+  st.pending = null;
+  const last = st.rows[st.rows.length - 1]; last.note = ''; last.pend = false; last.txt = false;
+  renderRows(); showOpBox(); setFb('', '');
+  $('op').focus();
+}
+function undo() {
+  if (finished || !st.hist.length) return;
+  if (st.pending) cancelNf();
+  const h = st.hist.pop();
+  st.E = h.E; st.rows.length = h.len;
+  const last = st.rows[st.rows.length - 1]; last.note = ''; last.txt = false; last.pend = false;
+  renderRows(); setFb('info', 'Visszaléptél egy lépést.');
+  $('op').focus();
+}
+function finishStep(revealed) {
+  finished = true;
+  const credit = !revealed && st.errors === 0;
+  $('opBox').hidden = true; $('nfBox').hidden = true;
+  $('bHint').hidden = true; $('bUndo').hidden = true; $('bReveal').hidden = true; $('bNext').hidden = false;
+  renderRows();
+  record(credit);
+  const steps = st.rows.filter(r0 => !r0.auto).length - 1;
+  if (revealed) setFb('info', 'A hátralévő lépéseket a program mutatta meg. Ez a feladat nem számít hibátlannak.');
+  else setFb('ok', (credit ? 'Kész, hibátlanul! ' : 'Kész! ') + steps + ' lépésben jutottál el a megoldásig: ' + X + ' = ' + fhtml(cur.x), true);
+  checkLine();
+  $('bNext').focus({ preventScroll: true });
+}
+function revealStep() {
+  if (finished) return;
+  if (st.pending) cancelNf();
+  const rest = derive(st.E);
+  const last = st.rows[st.rows.length - 1];
+  last.note = rest[0].note; last.txt = rest[0].txt; last.pend = false;
+  rest.slice(1).forEach(row => st.rows.push(Object.assign({}, row, { auto: true })));
+  st.revealed = true;
+  finishStep(true);
+}
+function hintStep() {
+  hintShown = true; renderRule();
+  if (st.pending) {
+    setFb('info', 'Végezd el a(z) <span class="m">' + opNote(st.pending.op).h.replace('| ', '') +
+      '</span> műveletet a bal és a jobb oldal minden tagjával, aztán vond össze, amit lehet.', true);
+    return;
+  }
+  const op = nextOp(st.E);
+  if (!op) return;
+  const n = opNote(op);
+  setFb('info', n.txt
+    ? 'Javasolt lépés: ' + n.h + '.'
+    : 'Javasolt lépés: mindkét oldalon <span class="m">' + n.h.replace('| ', '') + '</span>', true);
+}
+
+/* ---------- Gyors jelbeíró gombok ---------- */
+const KEYS = ['+', '−', '·', ':', 'x', '(', ')', '/', '='];
+$('keys').innerHTML = KEYS.map(k => '<button type="button" class="key" data-k="' + k + '">' + (k === 'x' ? X : k) + '</button>').join('');
+$('keys').addEventListener('pointerdown', e => { if (e.target.closest('.key')) e.preventDefault(); });
+$('keys').addEventListener('click', e => {
+  const b = e.target.closest('.key'); if (!b) return;
+  const el = lastInput && !lastInput.disabled && !lastInput.closest('[hidden]') ? lastInput : ($('nfBox').hidden ? $('op') : $('nf'));
+  const k = b.dataset.k;
+  try { el.setRangeText(k, el.selectionStart ?? el.value.length, el.selectionEnd ?? el.value.length, 'end'); }
+  catch (err) { el.value += k; }
+  el.focus();
+});
+['op', 'nf'].forEach(id => $(id).addEventListener('focus', () => { lastInput = $(id); }));
+
+/* ---------- Események ---------- */
+$('topics').addEventListener('click', e => {
+  const b = e.target.closest('.topic'); if (!b) return;
+  state.topic = b.dataset.id; save(); renderTopics(); newQuestion();
+});
+$('levels').addEventListener('click', e => {
+  const b = e.target.closest('.lv'); if (!b) return;
+  state.level = Number(b.dataset.id); save(); renderOpts(); newQuestion();
+});
+$('modes').addEventListener('click', e => {
+  const b = e.target.closest('.lv'); if (!b) return;
+  state.mode = b.dataset.id; save(); renderOpts(); newQuestion();
+});
+$('typed').addEventListener('change', () => {
+  state.typed = $('typed').checked; save();
+  if (state.mode === 'step' && !finished) {
+    if (st && st.pending && !state.typed) { const p = st.pending; st.pending = null; commit(p.op, p.E); }
+    $('qAsk').textContent = state.typed
+      ? 'Add meg, milyen műveletet végzel mindkét oldalon, aztán írd fel az egyenlet új alakját. Addig folytasd, amíg x = … alakot nem kapsz.'
+      : 'Add meg, milyen műveletet végzel mindkét oldalon; a program felírja az új alakot. Addig folytasd, amíg x = … alakot nem kapsz.';
+  }
+});
+$('bCheck').addEventListener('click', checkQuick);
+$('bNext').addEventListener('click', newQuestion);
+$('bReveal').addEventListener('click', () => {
+  if (state.mode === 'step') revealStep();
+  else {
+    const a = $('ans'); a.value = ftext(cur.x); a.readOnly = true; a.className = 'slot shown';
+    setFb('info', 'A megoldás látható. Ez a feladat nem számít elsőre jónak.');
+    finishQuick(false);
+  }
+});
+$('bHint').addEventListener('click', () => {
+  if (state.mode === 'step') { hintStep(); return; }
+  hintShown = true; renderRule();
+  const first = cur.rows[0];
+  if (!first.note) { setFb('info', 'A módszer látható alul.'); return; }
+  setFb('info', first.txt ? 'Első lépés: ' + first.note + '.'
+    : 'Első lépés: mindkét oldalon <span class="m">' + first.note.replace('| ', '') + '</span>', true);
+});
+$('bUndo').addEventListener('click', undo);
+$('bApply').addEventListener('click', applyTyped);
+$('bExpand').addEventListener('click', () => userOp({ k: 'expand' }));
+$('bCombine').addEventListener('click', () => userOp({ k: 'combine' }));
+$('bNf').addEventListener('click', checkNf);
+$('bShowNf').addEventListener('click', () => { if (st.pending) { const p = st.pending; commit(p.op, p.E); if (!finished) setFb('info', 'Ez az új alak. Folytasd a következő lépéssel.'); } });
+$('bCancelNf').addEventListener('click', cancelNf);
+$('op').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyTyped(); } });
+$('op').addEventListener('input', () => $('op').classList.remove('bad'));
+$('nf').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkNf(); } });
+$('nf').addEventListener('input', () => $('nf').classList.remove('bad'));
+$('ans').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkQuick(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && finished && document.activeElement !== $('bNext')) { e.preventDefault(); newQuestion(); }
+});
+let resetArmed = false, resetTimer = null;
+$('bReset').addEventListener('click', () => {
+  const b = $('bReset');
+  if (!resetArmed) {
+    resetArmed = true; b.textContent = 'Biztosan törlöd? Kattints még egyszer.'; b.classList.add('warn');
+    resetTimer = setTimeout(() => { resetArmed = false; b.textContent = 'Eredmények törlése'; b.classList.remove('warn'); }, 4000);
+    return;
+  }
+  clearTimeout(resetTimer); resetArmed = false; b.textContent = 'Eredmények törlése'; b.classList.remove('warn');
+  state.stats = {}; state.streak = 0; save(); renderTopics(); renderTally();
+});
+
+load(); renderTopics(); renderOpts(); renderTally(); newQuestion();
+</script>
+</body></html>
